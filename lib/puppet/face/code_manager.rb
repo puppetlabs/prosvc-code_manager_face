@@ -1,8 +1,9 @@
 require 'puppet'
 require 'puppet/face'
 require 'json'
-require 'puppet/network/http/connection'
-require 'net/http'
+require 'puppet/network/http'
+require 'puppet/network/http_pool'
+require 'puppet/network/http/nocache_pool'
 require 'uri'
 
 Puppet::Face.define(:code_manager, '0.1.0') do
@@ -40,11 +41,6 @@ DESCRIPTION
       default_to { nil }
     end
 
-    option '-k', '--insecure' do
-      summary "Allow insecure connections (assuming PE certs not added to root)"
-      default_to { nil }
-    end
-
     when_invoked do |options|
       deploy_call = DeployCall.new(post_body, options)
       deploy_call.result(options[:insecure])
@@ -74,11 +70,6 @@ DESCRIPTION
 
     option '-t TOKENFILE', '--tokenfile TOKENFILE' do
       summary "File containing RBAC authorization token"
-      default_to { nil }
-    end
-
-    option '-k', '--insecure' do
-      summary "Allow insecure connections (assuming PE certs not added to root)"
       default_to { nil }
     end
 
@@ -117,13 +108,11 @@ class DeployCall
 
   def result(insecure = false)
     uri = URI(@code_manager_all)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = true if uri.scheme == 'https'
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE if insecure
-    request = Net::HTTP::Post.new(uri.request_uri, {'Content-Type' =>'application/json'})
-    request.body = @post_body.to_json
-    response = http.request(request)
-    JSON.pretty_generate(JSON.parse(response.body))
+    Puppet.override(:http_pool => Puppet::Network::HTTP::NoCachePool.new) do
+      conn = Puppet::Network::HttpPool.http_instance(uri.host, uri.port)
+      response = conn.post(uri.request_uri, @post_body.to_json, {'Content-Type' =>'application/json'})
+      JSON.pretty_generate(JSON.parse(response.body))
+    end
   end
 
 end
