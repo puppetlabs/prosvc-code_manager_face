@@ -7,6 +7,9 @@
    * [start](#start)
    * [startall](#startall)
 
+## Use at your own risk
+This puppet face is intended as a stopgap measure to provide a CLI for the code manager service released in Puppet Enterprise 2015.3. While it has been tested it may not receive additional maintenance or updates and is not a supported product of Puppet Labs. A future release will include a more fully featured and supported CLI tool to replace this interim method.
+
 ## Description
 
 code_manager_face provides a face for puppet in order to interact with the

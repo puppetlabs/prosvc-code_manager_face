@@ -43,7 +43,7 @@ DESCRIPTION
 
     when_invoked do |options|
       deploy_call = DeployCall.new(post_body, options)
-      deploy_call.result
+      deploy_call.result(options[:insecure])
     end
   end
 
@@ -76,7 +76,7 @@ DESCRIPTION
     when_invoked do |environment, options|
       post_body["environments"] = [ environment ]
       deploy_call = DeployCall.new(post_body, options)
-      deploy_call.result
+      deploy_call.result(options[:insecure])
     end
   end
 end
@@ -95,7 +95,7 @@ class DeployCall
     token_file = options[:tokenfile] || File.join(Dir.home, '.puppetlabs', 'token')
 
     if File.file?(token_file)
-      token = File.read(token_file).gsub('\n','')
+      token = File.read(token_file).gsub(/\n+/,'')
     else
       raise "Token file does not exist or is not readable."
     end
@@ -106,7 +106,7 @@ class DeployCall
     @code_manager_all = "https://#{code_manager_host}:#{code_manager_port}/#{CODE_MANAGER_PATH}?token=#{token}"
   end
 
-  def result
+  def result(insecure = false)
     uri = URI(@code_manager_all)
     Puppet.override(:http_pool => Puppet::Network::HTTP::NoCachePool.new) do
       conn = Puppet::Network::HttpPool.http_instance(uri.host, uri.port)
@@ -114,4 +114,5 @@ class DeployCall
       JSON.pretty_generate(JSON.parse(response.body))
     end
   end
+
 end
