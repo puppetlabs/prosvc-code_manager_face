@@ -1,8 +1,9 @@
 require 'puppet'
 require 'puppet/face'
 require 'json'
-require 'puppet/network/http/connection'
-require 'net/http'
+require 'puppet/network/http'
+require 'puppet/network/http_pool'
+require 'puppet/network/http/nocache_pool'
 require 'uri'
 
 Puppet::Face.define(:code_manager, '0.1.0') do
@@ -102,15 +103,15 @@ class DeployCall
     Puppet.settings.preferred_run_mode = "master"
     code_manager_host = options[:cmserver] || Puppet[:ca_server]
     code_manager_port = options[:cmport] || DEFAULT_CODE_MANAGER_PORT
-    @code_manager_all = "http://#{code_manager_host}:#{code_manager_port}/#{CODE_MANAGER_PATH}?token=#{token}"
+    @code_manager_all = "https://#{code_manager_host}:#{code_manager_port}/#{CODE_MANAGER_PATH}?token=#{token}"
   end
 
   def result
     uri = URI(@code_manager_all)
-    http = Net::HTTP.new(uri.host, uri.port)
-    request = Net::HTTP::Post.new(uri.request_uri, {'Content-Type' =>'application/json'})
-    request.body = @post_body.to_json
-    response = http.request(request)
-    JSON.pretty_generate(JSON.parse(response.body))
+    Puppet.override(:http_pool => Puppet::Network::HTTP::NoCachePool.new) do
+      conn = Puppet::Network::HttpPool.http_instance(uri.host, uri.port)
+      response = conn.post(uri.request_uri, @post_body.to_json, {'Content-Type' =>'application/json'})
+      JSON.pretty_generate(JSON.parse(response.body))
+    end
   end
 end
