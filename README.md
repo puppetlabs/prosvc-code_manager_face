@@ -59,3 +59,9 @@ OPTIONS:
   -t TOKENFILE | --tokenfile TO  - File containing RBAC authorization token
   -w | --wait                    - Wait for the code-manager service to return
 ```
+
+## Maintainers
+This repositority is largely the work of the Puppet Labs Professional Services
+team.  It is not officially maintained by Puppet Labs, or any individual in
+particular.  Issues should be opened in github.  Questions should be directed
+at the individuals responsible for committing that particular code.
